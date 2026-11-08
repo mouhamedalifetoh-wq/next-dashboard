@@ -237,3 +237,77 @@ export async function fetchFilteredCustomers(query: string) {
     throw new Error('Failed to fetch customer table.');
   }
 }
+
+// Customer detail page (added after the course): one customer with their totals,
+// and that customer's invoices. Same pattern as the fetchers above: session check
+// first, parameterised SQL, generic error message.
+export type CustomerDetail = {
+  id: string;
+  name: string;
+  email: string;
+  image_url: string;
+  total_invoices: number;
+  total_pending: string;
+  total_paid: string;
+};
+
+export type CustomerInvoice = {
+  id: string;
+  amount: number;
+  date: string;
+  status: 'pending' | 'paid';
+};
+
+export async function fetchCustomerById(id: string) {
+  await requireSession();
+
+  try {
+    const data = await sql<
+      (Omit<CustomerDetail, 'total_pending' | 'total_paid'> & {
+        total_pending: number;
+        total_paid: number;
+      })[]
+    >`
+      SELECT
+        customers.id,
+        customers.name,
+        customers.email,
+        customers.image_url,
+        COUNT(invoices.id)::int AS total_invoices,
+        SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount ELSE 0 END) AS total_pending,
+        SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount ELSE 0 END) AS total_paid
+      FROM customers
+      LEFT JOIN invoices ON customers.id = invoices.customer_id
+      WHERE customers.id = ${id}
+      GROUP BY customers.id, customers.name, customers.email, customers.image_url
+    `;
+
+    const customer = data[0];
+    if (!customer) return undefined;
+    return {
+      ...customer,
+      total_pending: formatCurrency(customer.total_pending ?? 0),
+      total_paid: formatCurrency(customer.total_paid ?? 0),
+    } satisfies CustomerDetail;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch customer.');
+  }
+}
+
+export async function fetchInvoicesByCustomer(customerId: string) {
+  await requireSession();
+
+  try {
+    return await sql<CustomerInvoice[]>`
+      SELECT id, amount, date, status
+      FROM invoices
+      WHERE customer_id = ${customerId}
+      ORDER BY date DESC
+      LIMIT 100
+    `;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch customer invoices.');
+  }
+}

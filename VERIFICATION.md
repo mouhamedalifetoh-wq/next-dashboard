@@ -414,6 +414,25 @@ Final run on a clean build WITH `proxy.ts`, lint 0 errors, `tsc` 0, 19 protected
 Data layer alone (proxy.ts temporarily moved aside, then restored byte-identical): signed-out request to the customers page gives HTTP 500 with no data, 8/8 PASS.
 Note: a first run showed many failures because an old no-proxy server was still holding port 3000; I stopped it by its exact PID, rebuilt and re-ran everything. The numbers above are from that clean run.
 
+## Customer detail and editing (added after the customers list)
+Click a customer in the list to open `/dashboard/customers/<id>`: profile, totals, that customer's invoices (each links to its invoice edit page) and a form to edit name and email.
+Code: `fetchCustomerById` and `fetchInvoicesByCustomer` (added to `data.ts`, both call `requireSession()`), `updateCustomer` (added to `actions.ts`: `requireUser()`, UUID check, Zod name 1-100 / email valid max 254, duplicate-email check, SQL in try/catch, `notFound()` outside it, revalidates the customers, invoices and dashboard pages). Both files were only extended: no existing line changed. The protected-file baseline was refreshed for these two files on purpose; the other 17 are still byte-identical.
+Result on a clean build with `proxy.ts`, real Chrome against the real database (t20, 20/20 PASS): detail page matches SQL, 404 for a malformed and an unknown id, signed out redirected to /login, clicking a list row opens the page, empty name and bad email show field errors and change nothing, typed values are kept after an error, another customer's email is refused, a hostile name is stored as text and rendered escaped, a valid edit is saved and shows in the list, search and the invoices page, no horizontal overflow at 375px, row counts unchanged, the test customer restored.
+Regression on the same build: t11 55/55, t12 23/23, t13 59/59, t14 44/44, t15 19/19, t16 27/27, t17 12/12, t19 20/20.
+Not tested: a signed-out POST straight to the `updateCustomer` action (the proxy and `requireUser()` both guard it, same pattern as the invoice actions, but no dedicated probe was run). No delete-customer or add-customer feature exists (not requested). The photo cannot be changed.
+
+## Interactive extras (clickable cards, filters, shortcut, confirm-delete)
+Six small additions, UI only (no change to `data.ts`, `actions.ts` or any other protected file; the 19 hashes still match):
+1. Overview cards are links: Collected -> invoices filtered to paid, Pending -> pending, Total Invoices -> invoices, Total Customers -> customers. Latest-invoice rows open that invoice's edit page.
+2. Status chips (All / Paid / Pending) on the invoices page. They only set `?query=`; the existing search already matches the status column. Side effect to know: the word "paid" also matches a customer name or email that contains it.
+3. Press `/` to focus the search box (ignored while typing in a field). The box now follows the URL when a chip changes it, but never overwrites text while you type.
+4. "New invoice for <name>" on the customer page opens the create form with that customer selected. `?customerId=` is only accepted if it is a real customer id; anything else is ignored.
+5. Delete asks first: a native `<dialog>` (Escape or Cancel keeps the invoice). The `.bind(null, id)` course pattern moved from `buttons.tsx` to `delete-button.tsx`; the artifact checker and REPO-MAP were updated to match. The dialog id uses `useId()` because the list renders each button twice (cards and table).
+6. Copy-email button on the customer page.
+Results on a clean build with proxy.ts, real Chrome, real database (t21, 23/23 PASS): cards filter correctly, row link opens edit form, chips filter and sync the search box, `/` focuses without typing a slash and still types one inside the box, preselect works and a bogus id is ignored, copy puts the email on the clipboard, Delete: dialog opens, Escape and Cancel keep the invoice, Confirm removes it from the database and list, no overflow at 375px, invoice count back to 14. Regression on the same build: t11 55/55, t12 23/23, t13 59/59, t14 44/44, t15 19/19, t16 27/27, t17 12/12, t19 20/20, t20 20/20; lint 0 errors, tsc 0.
+Not tested: keyboard-only and screen-reader use of the dialog (only Escape and clicks), Safari/Firefox (`<dialog>` is supported there but was not driven).
+Data note: the database now holds a customer named "Lee Robinsons" (seed value is "Lee Robinson"). I did not make that edit (my tests restore the original values), so it was probably done through the new edit form; I left it alone.
+
 ## Not yet run (planned)
 Auth and authorization, route protection, CRUD, invalid input, database failure handling, seed-endpoint hardening, `pnpm build` after each later chapter, shadcn pass (build, accessibility, before/after look), production deployment checks. All **NOT RUN**.
 

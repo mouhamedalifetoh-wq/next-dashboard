@@ -7,8 +7,18 @@ export const metadata: Metadata = {
   title: 'Create Invoice',
 };
 
-export default async function Page() {
+export default async function Page(props: {
+  searchParams?: Promise<{ customerId?: string }>;
+}) {
+  const searchParams = await props.searchParams;
   const customers = await fetchCustomers();
+  // Optional preselection from the customer page. Only accepted if it is one of
+  // the real customers; anything else is ignored.
+  const requested = searchParams?.customerId;
+  const defaultCustomerId =
+    typeof requested === 'string' && customers.some((c) => c.id === requested)
+      ? requested
+      : undefined;
 
   return (
     <main>
@@ -22,7 +32,7 @@ export default async function Page() {
           },
         ]}
       />
-      <Form customers={customers} />
+      <Form customers={customers} defaultCustomerId={defaultCustomerId} />
     </main>
   );
 }

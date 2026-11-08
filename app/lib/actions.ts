@@ -200,6 +200,95 @@ export async function deleteInvoice(id: string) {
   revalidatePath('/dashboard');
 }
 
+// Customer editing (added after the course). Same rules as the invoice actions:
+// session check first, Zod validation with user-facing messages, SQL in try/catch,
+// redirect/notFound kept outside it.
+const CustomerSchema = z.object({
+  name: z
+    .string({ invalid_type_error: 'Please enter a name.' })
+    .trim()
+    .min(1, { message: 'Please enter a name.' })
+    .max(100, { message: 'The name is too long (100 characters at most).' }),
+  email: z
+    .string({ invalid_type_error: 'Please enter an email address.' })
+    .trim()
+    .min(1, { message: 'Please enter an email address.' })
+    .max(254, { message: 'The email address is too long.' })
+    .email({ message: 'Please enter a valid email address.' }),
+});
+
+export type CustomerState = {
+  errors?: { name?: string[]; email?: string[] };
+  message?: string | null;
+  success?: boolean;
+  // What was submitted, so the form can keep it after a validation error.
+  values?: { name: string; email: string };
+};
+
+export async function updateCustomer(
+  id: string,
+  prevState: CustomerState,
+  formData: FormData,
+): Promise<CustomerState> {
+  await requireUser();
+
+  const customerId = FormSchema.shape.id.parse(id);
+
+  const rawName = formData.get('name');
+  const rawEmail = formData.get('email');
+  const values = {
+    name: typeof rawName === 'string' ? rawName : '',
+    email: typeof rawEmail === 'string' ? rawEmail : '',
+  };
+
+  const validatedFields = CustomerSchema.safeParse({
+    name: rawName,
+    email: rawEmail,
+  });
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Update Customer.',
+      values,
+    };
+  }
+
+  const { name, email } = validatedFields.data;
+
+  let customerFound = false;
+  let emailTaken = false;
+  try {
+    const taken = await sql`
+      SELECT 1 FROM customers WHERE lower(email) = lower(${email}) AND id <> ${customerId}
+    `;
+    emailTaken = taken.length > 0;
+    if (!emailTaken) {
+      const result = await sql`
+        UPDATE customers SET name = ${name}, email = ${email} WHERE id = ${customerId}
+      `;
+      customerFound = result.count > 0;
+    }
+  } catch (error) {
+    return { message: databaseMessage('Update Customer', error), values };
+  }
+  if (emailTaken) {
+    return {
+      errors: { email: ['Another customer already uses this email address.'] },
+      message: 'Failed to Update Customer.',
+      values,
+    };
+  }
+  if (!customerFound) {
+    notFound();
+  }
+
+  revalidatePath('/dashboard/customers');
+  revalidatePath(`/dashboard/customers/${customerId}`);
+  revalidatePath('/dashboard/invoices'); // invoices list shows the customer's name and email
+  revalidatePath('/dashboard');
+  return { success: true, message: 'Customer saved.', values: { name, email } };
+}
+
 // Chapter 14: called by the login form through useActionState.
 export async function authenticate(
   prevState: string | undefined,

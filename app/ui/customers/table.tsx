@@ -50,7 +50,7 @@ export default async function CustomersTable({
                 {customers.map((customer) => (
                   <div
                     key={customer.id}
-                    className="mb-2 w-full rounded-xl border border-white/10 bg-white/[0.04] p-4"
+                    className="relative mb-2 w-full rounded-xl border border-white/10 bg-white/[0.04] p-4 transition-colors hover:border-virus-neon/40 hover:bg-white/[0.07]"
                   >
                     <div className="flex items-center justify-between border-b border-white/10 pb-4">
                       <div>
@@ -62,7 +62,12 @@ export default async function CustomersTable({
                             width={28}
                             height={28}
                           />
-                          <p>{customer.name}</p>
+                          <Link
+                            href={`/dashboard/customers/${customer.id}`}
+                            className="after:absolute after:inset-0 after:content-['']"
+                          >
+                            {customer.name}
+                          </Link>
                         </div>
                         <p className="text-sm text-virus-mute">
                           {customer.email}
@@ -114,7 +119,7 @@ export default async function CustomersTable({
                   {customers.map((customer) => (
                     <tr
                       key={customer.id}
-                      className="border-t border-white/10 text-sm transition-colors hover:bg-white/[0.03]"
+                      className="relative cursor-pointer border-t border-white/10 text-sm transition-colors hover:bg-virus-neon/[0.06]"
                     >
                       <td className="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
                         <div className="flex items-center gap-3">
@@ -125,7 +130,12 @@ export default async function CustomersTable({
                             width={28}
                             height={28}
                           />
-                          <p>{customer.name}</p>
+                          <Link
+                            href={`/dashboard/customers/${customer.id}`}
+                            className="after:absolute after:inset-0 after:content-[''] hover:text-virus-neon"
+                          >
+                            {customer.name}
+                          </Link>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-virus-mute">
