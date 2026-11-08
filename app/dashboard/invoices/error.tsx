@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import ErrorState from '@/app/ui/error-state';
 
 export default function Error({
   error,
@@ -15,10 +17,13 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="flex h-full flex-col items-center justify-center">
-      <h2 className="text-center">Something went wrong!</h2>
+    <ErrorState
+      icon={ExclamationTriangleIcon}
+      title="Something went wrong!"
+      message="We couldn't load your invoices. Try again in a moment."
+    >
       <button
-        className="mt-4 rounded-md bg-blue-500 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-400"
+        className="v-btn"
         onClick={
           // The course uses reset(), which re-renders without re-fetching, so a
           // failed server render stays failed. Next 16's docs recommend retry(),
@@ -28,6 +33,6 @@ export default function Error({
       >
         Try again
       </button>
-    </main>
+    </ErrorState>
   );
 }

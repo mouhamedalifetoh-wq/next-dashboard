@@ -28,19 +28,34 @@ export default function NavLinks() {
     <>
       {links.map((link) => {
         const LinkIcon = link.icon;
+        // Home matches only itself; Invoices and Customers also stay lit on their
+        // nested pages (create, edit).
+        const isActive =
+          pathname === link.href ||
+          (link.href !== '/dashboard' && pathname.startsWith(`${link.href}/`));
         return (
           <Link
             key={link.name}
             href={link.href}
+            aria-current={isActive ? 'page' : undefined}
             className={clsx(
-              'flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-sky-100 hover:text-blue-600 md:flex-none md:justify-start md:p-2 md:px-3',
+              'relative flex flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-transparent px-3 py-2 text-[11px] font-medium transition duration-200 md:h-12 md:flex-none md:flex-row md:justify-start md:gap-3 md:px-3 md:py-0 md:text-sm',
               {
-                'bg-sky-100 text-blue-600': pathname === link.href,
+                'border-virus-neon/25 bg-gradient-to-r from-virus-neon/15 to-virus-neon/[0.03] text-virus-neon':
+                  isActive,
+                'text-virus-mute hover:bg-white/5 hover:text-virus-ink md:hover:translate-x-0.5':
+                  !isActive,
               },
             )}
           >
-            <LinkIcon className="w-6" />
-            <p className="hidden md:block">{link.name}</p>
+            {isActive ? (
+              <span
+                aria-hidden="true"
+                className="absolute inset-x-[30%] -top-2 h-[3px] rounded-b-full bg-virus-neon shadow-glow md:inset-x-auto md:-left-4 md:bottom-2.5 md:top-2.5 md:h-auto md:w-[3px] md:rounded-b-none md:rounded-r-full"
+              />
+            ) : null}
+            <LinkIcon className="h-5 w-5 md:h-6 md:w-6" />
+            <p>{link.name}</p>
           </Link>
         );
       })}

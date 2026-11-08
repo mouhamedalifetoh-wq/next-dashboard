@@ -2,6 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---- VIRUS base ------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background-color: #07090a;
+}
+
+body {
+  min-height: 100vh;
+  color: #eaf2ee;
+  background-color: #07090a;
+}
+
+/* Soft green glow and a faint grid behind everything. Fixed, so it never scrolls. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 8% -10%, rgba(43, 255, 136, 0.1), transparent 60%),
+    radial-gradient(700px 400px at 100% 0, rgba(43, 255, 136, 0.05), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px) 0 0 / 44px 44px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px) 0 0 / 44px 44px;
+  -webkit-mask-image: linear-gradient(#000 20%, transparent 85%);
+  mask-image: linear-gradient(#000 20%, transparent 85%);
+}
+
+::selection {
+  background: rgba(43, 255, 136, 0.28);
+  color: #ffffff;
+}
+
+/* One consistent, visible focus ring for keyboard users. */
+:focus-visible {
+  outline: 2px solid #2bff88;
+  outline-offset: 2px;
+}
+
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
@@ -15,4 +57,57 @@ input[type='number']::-webkit-inner-spin-button {
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* ---- Reusable pieces --------------------------------------------------- */
+@layer components {
+  /* A glass panel: the standard surface for cards and tables. */
+  .v-glass {
+    @apply rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  /* Text inputs, selects. The @tailwindcss/forms plugin sets light defaults; these override them. */
+  .v-input {
+    @apply block w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-10 text-sm text-virus-ink outline-none transition placeholder:text-virus-mute;
+  }
+  .v-input:focus {
+    @apply border-virus-neon/70;
+    box-shadow: 0 0 0 3px rgba(43, 255, 136, 0.15);
+  }
+
+  .v-label {
+    @apply mb-2 block text-sm font-medium text-virus-ink;
+  }
+
+  /* Primary action: neon. Lifts on hover, presses down on click. */
+  .v-btn {
+    @apply inline-flex h-10 items-center justify-center rounded-xl bg-virus-neon px-4 text-sm font-semibold text-virus-neon-ink shadow-glow transition duration-150 hover:-translate-y-px hover:shadow-glow-lg active:translate-y-0 active:scale-[0.97] aria-disabled:cursor-not-allowed aria-disabled:opacity-50;
+  }
+
+  /* Secondary action: quiet glass. */
+  .v-btn-quiet {
+    @apply inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-medium text-virus-ink transition duration-150 hover:border-white/25 hover:bg-white/10 active:scale-[0.97];
+  }
+
+  /* Small square icon buttons in table rows. */
+  .v-icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-virus-mute transition duration-150 hover:border-white/25 hover:bg-white/10 hover:text-virus-ink active:scale-95;
+  }
+}
+
+/* ---- Motion ------------------------------------------------------------
+   Everything animated above is decorative. Anyone who asks their system for
+   reduced motion gets the final state immediately: no sliding, growing,
+   shimmering or counting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

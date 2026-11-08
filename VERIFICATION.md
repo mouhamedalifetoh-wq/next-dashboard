@@ -362,6 +362,58 @@ Wording corrections made while reviewing the draft (claims I could not support w
 
 Limits: the line numbers are exact for the code as it is today. Any later edit to a referenced file (for example the VIRUS redesign) can shift them; the generator and checker re-create and re-verify the document in seconds, and the checker must pass again right before the commit.
 
+## VIRUS redesign (separate phase after the 15 chapters)
+
+What it is: a new product name (VIRUS) and a dark, neon-green, glass-style interface laid over the finished course app. It changes how things look and move, not what they do. Nothing was committed or pushed for this phase.
+Guardrails and how they were checked:
+- 19 protected files must not change (`app/lib/actions.ts`, `data.ts`, `definitions.ts`, `placeholder-data.ts`, `utils.ts`, `auth.ts`, `auth.config.ts`, `proxy.ts`, `app/seed/route.ts`, `package.json`, the lockfile and workspace file, `tsconfig.json`, `next.config.ts`, `eslint.config.mjs`, `postcss.config.js`, `.env`, `.env.example`): SHA-256 taken before and compared after.
+- 31 course-learning artifacts (clsx, `next/font`, `next/image`, layouts, `Link` + `usePathname`, Suspense and `loading.tsx`, debounced search, `bind`, `useActionState`, `error.tsx`, `notFound()`, metadata ...) must still exist: grep checker run before and after.
+- No new dependency: `package.json` and the lockfile are unchanged. Fonts come through `next/font`. Animations are CSS.
+
+| # | Check | Result | Status |
+|---|---|---|---|
+| 15.1 | Protected files | all 19 byte-identical to before | PASS |
+| 15.2 | Course artifacts | 31 of 31 still present | PASS |
+| 15.3 | Lint / type-check / clean build (exit codes captured) | lint 0 (0 errors, the same 2 old warnings), tsc 0, build 0. Route table identical to before the redesign (same routes, same static/dynamic split, `ƒ Proxy`) | PASS |
+| 15.4 | Lint caught a real problem during the work | the first count-up called `setState` inside an effect (a cascading-render risk). Rewritten to write to the element through a ref | FIXED |
+| 15.5 | Chapter 11 suite (create/update/delete, validation, auth guard) | **55/55** (one selector updated: the card markup changed) | PASS |
+| 15.6 | Chapter 12 suites | good database **23/23**, database unreachable **13/13** (one assertion updated: the missing-invoice 404 is now the branded VIRUS 404 instead of Next's generic one; HTTP 404 and "no technical details" unchanged) | PASS |
+| 15.7 | Chapter 13 suite (validation messages, ARIA wiring) | **59/59**, unchanged | PASS |
+| 15.8 | Chapter 14 suite (route protection, bypass attempts) | **44/44**, unchanged | PASS |
+| 15.9 | Chapter 15 suite (titles, share tags, favicon) | **19/19** after updating the expected name ("VIRUS"), description, and share image size (1200x630) | PASS |
+| 15.10 | Contrast (WCAG), computed | 16 of 16 pairings pass AA, e.g. body text 16-17:1, secondary text 6.6-7.4:1, neon button label 14.2:1, Pending amber on its pill 8.5:1, errors 6.4-6.8:1, focus ring 15:1 | PASS |
+| 15.11 | Reduced motion, in real Chrome with the system setting emulated | with "reduce": every animation duration is 0.00001 s with no delay, no infinite animation exists (the skeleton shimmer is capped at one pass), cards are fully opaque and the 12 chart bars are at full height immediately, the statistic numbers are final from the first frame, nothing is animating a moment after load. With "no preference": entrance animations run and the Collected number counts through 20 distinct values and ends on exactly `$1,006.26` | PASS |
+| 15.12 | Responsive, real Chrome at exact widths | phone 375, tablet 768, desktop 1280, on dashboard, invoices, create form, customers: no horizontal overflow in any of the 12 combinations. Phone: fixed bottom navigation with Home, Invoices, Customers, Sign Out and `aria-current` on the active tab. Tablet: sidebar plus card list. Desktop: sidebar plus table that fits its panel | PASS |
+| 15.13 | Signed-out screens in real Chrome (desktop and phone) | landing, login and the global 404: titles "VIRUS" and "Login \| VIRUS", no "Acme" text anywhere, the right hero image shown and loaded at each width, labelled login fields, 404 offers a way back | PASS (12/12) |
+| 15.14 | Real-browser walk-through (local app) | login, dashboard, invoices, create form with its errors, 404 and phone layout all reviewed on screen | PASS |
+| 15.15 | Count-up flash (measured frame by frame, 3 runs) | the final number is on screen for **one frame at opacity 0.00** (card still fading in), then the count restarts from $0.00 and climbs; no visible flash locally | PASS (local) |
+
+Visible changes: VIRUS name and mark everywhere (sidebar, landing, login, page titles, 404); dark glass surfaces with neon accent; Space Grotesk headings and numbers; active-nav indicator (also now lit on the nested create and edit pages, and `aria-current` is set); phone bottom navigation; count-up statistic cards with staggered entrance; neon chart bars that grow in with hover values; amber/neon status badges; searchable table with empty-state ("No invoices found", "Clear search"); restyled forms, pagination and skeletons; branded error, dashboard-error and 404 screens; the table switches to cards below 1024 px (was 768 px) because six columns do not fit beside the sidebar.
+Assets: hero images, share image and favicon were rendered with Chrome from static pages styled like the app. **They show the figures at the time ($1,266.32 pending, 14 invoices) and will not update.**
+
+Limitations and things not verified:
+- The count-up flash was measured on localhost only. On a slow connection where JavaScript arrives after the 0.6 s entrance has finished, the final number could be seen once before the count restarts.
+- Not verified: Safari and Firefox (only Chrome was driven); a screen-reader pass (only automated ARIA and contrast checks); the redesign on the deployed site (nothing is deployed).
+- The database now holds one extra invoice that I did not create (Delba de Oliveira, $10.00, pending, dated 8 Nov 2026), so the live totals are 14 invoices and $1,266.32 pending rather than 13 and $1,256.32. My suites compute their baselines from live data, so they are unaffected.
+- `REPO-MAP.md` was regenerated for the new code: 84 of 84 references match, 60 folder-map entries exist, secret scan clean.
+- Uncommitted: 35 modified files, 7 new UI files, 1 deleted (`acme-logo.tsx`). Needs approval before any commit; the REPO-MAP checker must pass again right before it.
+
+## Customers page (real data, added after the redesign)
+Before: `/dashboard/customers` was a placeholder. Now it lists the customers in the database (name, email, invoice count, pending, paid) with search, using the existing `fetchFilteredCustomers` (no change to `data.ts`, which still requires a session).
+Final run on a clean build WITH `proxy.ts`, lint 0 errors, `tsc` 0, 19 protected files unchanged, 31 course artifacts present:
+| Suite | Result |
+|---|---|
+| t19 customers (rows and totals compared with SQL, search, hostile input, signed out) | PASS 20/20 |
+| t11 (Chapter 11 CRUD) | PASS 55/55 |
+| t12 good paths | PASS 23/23 |
+| t13 (forms/accessibility) | PASS 59/59 |
+| t14 full (authentication) | PASS 44/44 |
+| t15 (metadata) | PASS 19/19 |
+| t16 reduced motion | PASS 27/27 |
+| t17 signed-out screens | PASS 12/12 |
+Data layer alone (proxy.ts temporarily moved aside, then restored byte-identical): signed-out request to the customers page gives HTTP 500 with no data, 8/8 PASS.
+Note: a first run showed many failures because an old no-proxy server was still holding port 3000; I stopped it by its exact PID, rebuilt and re-ran everything. The numbers above are from that clean run.
+
 ## Not yet run (planned)
 Auth and authorization, route protection, CRUD, invalid input, database failure handling, seed-endpoint hardening, `pnpm build` after each later chapter, shadcn pass (build, accessibility, before/after look), production deployment checks. All **NOT RUN**.
 

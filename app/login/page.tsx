@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import AcmeLogo from '@/app/ui/acme-logo';
+import VirusLogo from '@/app/ui/virus-logo';
 import LoginForm from '@/app/ui/login-form';
 import { Suspense } from 'react';
 
@@ -10,15 +10,15 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <main className="flex items-center justify-center md:h-screen">
-      <div className="relative mx-auto flex w-full max-w-[400px] flex-col space-y-2.5 p-4 md:-mt-32">
-        <div className="flex h-20 w-full items-end rounded-lg bg-blue-500 p-3 md:h-36">
-          <div className="w-32 text-white md:w-36">
-            <AcmeLogo />
-          </div>
+      <div className="relative mx-auto flex w-full max-w-[400px] flex-col space-y-6 p-4 md:-mt-24">
+        <div className="flex justify-center">
+          <VirusLogo className="text-3xl" markClassName="h-11 w-11" />
         </div>
-        <Suspense>
-          <LoginForm />
-        </Suspense>
+        <div className="animate-fade-up">
+          <Suspense>
+            <LoginForm />
+          </Suspense>
+        </div>
       </div>
     </main>
   );

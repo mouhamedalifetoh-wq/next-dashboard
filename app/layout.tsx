@@ -1,5 +1,5 @@
 import '@/app/ui/global.css';
-import { inter } from '@/app/ui/fonts';
+import { inter, display } from '@/app/ui/fonts';
 import { Metadata } from 'next';
 
 // The course hard-codes https://next-learn-dashboard.vercel.sh here, which is the
@@ -11,10 +11,11 @@ const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Acme Dashboard',
-    default: 'Acme Dashboard',
+    template: '%s | VIRUS',
+    default: 'VIRUS',
   },
-  description: 'The official Next.js Learn Dashboard built with App Router.',
+  description:
+    'VIRUS: invoices, revenue and customers in one dashboard.',
   metadataBase: new URL(siteUrl),
 };
 
@@ -25,7 +26,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased`}>{children}</body>
+      <body className={`${inter.className} ${display.variable} antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
